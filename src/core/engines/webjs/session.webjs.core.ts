@@ -701,8 +701,37 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
     throw new AvailableInPlusVersion();
   }
 
-  sendFile(request: MessageFileRequest) {
-    throw new AvailableInPlusVersion();
+  async sendFile(request: MessageFileRequest) {
+
+    let filePayload
+
+    try {
+      const rFile = request.file as RemoteFile
+      filePayload = await MessageMedia.fromUrl(rFile.url)
+
+    } catch (e) {
+      console.log("failed to cast as remote file")
+    }
+
+    if (!filePayload) {
+      try {
+        const bFile = request.file as BinaryFile
+        filePayload = new MessageMedia(
+          request.file.mimetype,
+          bFile.data,
+          request.file.filename
+        )
+      } catch (e) {
+        console.log("failed to cast as binary file")
+      }
+    }
+
+    const options = this.getMessageOptions(request);
+    return this.whatsapp.sendMessage(
+      this.ensureSuffix(request.chatId),
+      filePayload,
+      options,
+    );
   }
 
   sendVoice(request: MessageVoiceRequest) {
